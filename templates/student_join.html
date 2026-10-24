@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<!--
+  CabiNet — школьная платформа для тестов
+
+  Автор: Новиков Алексей Валерьевич
+  Год создания: 2026
+  Лицензия: All rights reserved
+
+  (c) 2026 Новиков Алексей Валерьевич. Все права защищены.
+  Любое копирование, распространение или изменение
+  без письменного разрешения автора запрещено.
+-->
+
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CabiNet — Вход</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #f8fafc; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+}
+.card {
+    background: rgba(30, 41, 59, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 24px; padding: 32px 24px;
+    width: 100%; max-width: 400px; text-align: center;
+    animation: slideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.logo { font-size: 64px; margin-bottom: 12px; animation: float 3s infinite; }
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+h1 {
+    font-size: 26px;
+    background: linear-gradient(90deg, #3B82F6, #10B981);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+}
+.subtitle { color: #94a3b8; font-size: 14px; margin-bottom: 28px; }
+.field { text-align: left; margin-bottom: 16px; }
+.field label {
+    display: block; font-size: 12px; color: #94a3b8;
+    margin-bottom: 6px; font-weight: 600;
+}
+.field input {
+    width: 100%; padding: 16px; font-size: 16px;
+    background: rgba(15, 23, 42, 0.8);
+    border: 2px solid rgba(148, 163, 184, 0.2);
+    border-radius: 14px; color: #f8fafc;
+    outline: none; transition: all 0.3s;
+}
+.field input:focus {
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+.btn {
+    width: 100%; padding: 16px; font-size: 16px; font-weight: 700;
+    background: linear-gradient(135deg, #3B82F6, #10B981);
+    color: white; border: none; border-radius: 14px;
+    cursor: pointer; margin-top: 8px;
+    font-family: inherit; transition: all 0.25s;
+}
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.error { color: #ef4444; font-size: 13px; margin-top: 12px; min-height: 18px; }
+.success { color: #10B981; font-size: 15px; margin-top: 12px; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="card">
+    <div class="logo">🎓</div>
+    <h1>CabiNet</h1>
+    <p class="subtitle">Введите ваше имя чтобы войти в урок</p>
+
+    <div class="field">
+        <label>Ваше имя</label>
+        <input type="text" id="nameInput" placeholder="Например: Иванов Петя"
+               maxlength="50" autocomplete="off">
+    </div>
+
+    <button class="btn" id="joinBtn" onclick="joinLesson()">Войти в урок</button>
+
+    <div class="error" id="errorMsg"></div>
+    <div class="success" id="successMsg"></div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="/static/preloader.js"></script>
+<script>
+// Прелоадер для ученика
+window.CabiNetPreloader.show({
+    slogan: 'Готов к уроку?',
+    duration: 5000
+});
+
+const socket = io();
+const saved = localStorage.getItem('cabinet_name');
+if (saved) document.getElementById('nameInput').value = saved;
+
+document.getElementById('nameInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') joinLesson();
+});
+
+function joinLesson() {
+    const name = document.getElementById('nameInput').value.trim();
+    const errEl = document.getElementById('errorMsg');
+    const okEl = document.getElementById('successMsg');
+    errEl.textContent = '';
+    okEl.textContent = '';
+
+    if (!name || name.length < 2) {
+        errEl.textContent = 'Введите имя (минимум 2 символа)';
+        return;
+    }
+
+    localStorage.setItem('cabinet_name', name);
+    const btn = document.getElementById('joinBtn');
+    btn.disabled = true;
+    btn.textContent = 'Подключение...';
+
+    socket.emit('register_student', { name: name });
+}
+
+socket.on('register_ok', (data) => {
+    document.getElementById('successMsg').textContent = 'Добро пожаловать, ' + data.name + '!';
+    setTimeout(() => window.location.href = '/lesson', 800);
+});
+
+socket.on('register_error', (data) => {
+    document.getElementById('errorMsg').textContent = data.error || 'Ошибка';
+    const btn = document.getElementById('joinBtn');
+    btn.disabled = false;
+    btn.textContent = 'Войти в урок';
+});
+</script>
+</body>
+</html>

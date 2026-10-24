@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<!--
+  CabiNet — школьная платформа для тестов
+
+  Автор: Новиков Алексей Валерьевич
+  Год создания: 2026
+  Лицензия: All rights reserved
+
+  (c) 2026 Новиков Алексей Валерьевич. Все права защищены.
+  Любое копирование, распространение или изменение
+  без письменного разрешения автора запрещено.
+-->
+
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CabiNet — Тест</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #f8fafc; min-height: 100vh; padding: 16px;
+}
+.container { max-width: 720px; margin: 0 auto; }
+.header { text-align: center; margin-bottom: 16px; }
+.header h1 {
+    font-size: 22px;
+    background: linear-gradient(90deg, #3B82F6, #10B981);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.student-name { color: #10B981; font-size: 13px; font-weight: 600; margin-top: 4px; }
+.progress-bar {
+    height: 8px; background: rgba(15,23,42,0.8);
+    border-radius: 4px; overflow: hidden; margin-bottom: 16px;
+}
+.progress-fill {
+    height: 100%; background: linear-gradient(90deg, #3B82F6, #10B981);
+    transition: width 0.3s; width: 0%;
+}
+.progress-text {
+    text-align: center; color: #94a3b8; font-size: 13px;
+    margin-bottom: 16px; font-weight: 600;
+}
+.waiting {
+    text-align: center; padding: 60px 20px;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 20px;
+}
+.waiting .icon { font-size: 72px; margin-bottom: 16px; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+.card {
+    background: rgba(30, 41, 59, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 20px; padding: 24px;
+    animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.q-top {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 12px; gap: 12px;
+    flex-wrap: wrap;
+}
+.q-num {
+    display: inline-block; padding: 4px 12px;
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa; border-radius: 20px;
+    font-size: 12px; font-weight: 700;
+}
+.q-type {
+    display: inline-block; padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+}
+.q-type-single { background: rgba(59,130,246,0.15); color: #60a5fa; }
+.q-type-multiple { background: rgba(16,185,129,0.15); color: #10B981; }
+.q-type-open { background: rgba(203,166,247,0.15); color: #cba6f7; }
+.q-type-poll { background: rgba(245,158,11,0.15); color: #F59E0B; }
+
+.question {
+    font-size: 18px; font-weight: 600;
+    line-height: 1.5; margin-bottom: 16px;
+}
+.hint {
+    font-size: 13px; color: #cbd5e1;
+    margin-bottom: 16px; padding: 10px 14px;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 10px;
+    border-left: 4px solid #3B82F6;
+    line-height: 1.5;
+}
+
+/* Radio-варианты */
+.option {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px;
+    background: rgba(15, 23, 42, 0.8);
+    border: 2px solid rgba(148, 163, 184, 0.2);
+    border-radius: 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.25s;
+    font-size: 15px;
+}
+.option:hover { border-color: #3B82F6; background: rgba(59, 130, 246, 0.1); }
+.option.selected {
+    border-color: #3B82F6;
+    background: rgba(59, 130, 246, 0.25);
+}
+.option.saved { pointer-events: none; }
+
+.mark-circle {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 2px solid rgba(148, 163, 184, 0.4);
+    flex-shrink: 0; display: flex;
+    align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 700;
+    color: white;
+}
+.option.selected .mark-circle {
+    border-color: #3B82F6; background: #3B82F6;
+}
+.option.selected .mark-circle::after { content: '✓'; }
+
+.mark-check {
+    width: 26px; height: 26px; border-radius: 6px;
+    border: 2px solid rgba(148, 163, 184, 0.4);
+    flex-shrink: 0; display: flex;
+    align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 700;
+    color: white;
+}
+.option.multi-selected .mark-check {
+    border-color: #10B981; background: #10B981;
+}
+.option.multi-selected .mark-check::after { content: '✓'; }
+.option.multi-selected {
+    border-color: #10B981;
+    background: rgba(16, 185, 129, 0.2);
+}
+
+.open-textarea {
+    width: 100%; min-height: 120px;
+    padding: 16px;
+    background: rgba(15, 23, 42, 0.8);
+    border: 2px solid rgba(148, 163, 184, 0.2);
+    border-radius: 14px;
+    color: #f8fafc;
+    font-size: 15px;
+    font-family: inherit;
+    resize: vertical;
+    outline: none;
+    margin-bottom: 12px;
+}
+.open-textarea:focus {
+    border-color: #cba6f7;
+    box-shadow: 0 0 0 4px rgba(203, 166, 247, 0.15);
+}
+
+.saved-answer {
+    padding: 16px;
+    background: rgba(16,185,129,0.1);
+    border-radius: 12px;
+    color: #cbd5e1;
+    font-size: 15px;
+    white-space: pre-wrap;
+    line-height: 1.5;
+}
+
+.nav-buttons {
+    display: flex; gap: 10px; margin-top: 20px;
+}
+.btn {
+    padding: 14px 20px; border: none; border-radius: 12px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    font-family: inherit; transition: all 0.25s;
+}
+.btn-prev { background: rgba(148, 163, 184, 0.2); color: #f8fafc; }
+.btn-prev:hover { background: rgba(148, 163, 184, 0.35); }
+.btn-next {
+    flex: 1;
+    background: linear-gradient(135deg, #3B82F6, #10B981);
+    color: white;
+}
+.btn-next:hover { transform: translateY(-2px); }
+.btn-next:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn-finish {
+    flex: 1;
+    background: linear-gradient(135deg, #F59E0B, #EF4444);
+    color: white;
+}
+.btn-finish:hover { transform: translateY(-2px); }
+.btn:active { transform: scale(0.97); }
+
+.btn-save {
+    width: 100%;
+    margin-top: 8px;
+    padding: 16px;
+    border: none; border-radius: 14px;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    background: linear-gradient(135deg, #3B82F6, #10B981);
+    color: white;
+    transition: all 0.25s;
+}
+.btn-save:hover { transform: translateY(-2px); }
+.btn-save:active { transform: scale(0.97); }
+.btn-save:disabled {
+    opacity: 0.4; cursor: not-allowed; transform: none;
+}
+
+.dots {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    justify-content: center; margin-top: 20px;
+}
+.dot {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: rgba(15,23,42,0.6);
+    border: 2px solid rgba(148, 163, 184, 0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+    color: #94a3b8;
+}
+.dot.active {
+    border-color: #3B82F6; background: rgba(59, 130, 246, 0.3); color: #60a5fa;
+}
+.dot.answered {
+    background: rgba(16, 185, 129, 0.25);
+    border-color: #10B981; color: #10B981;
+}
+.dot.skipped {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: #F59E0B; color: #F59E0B;
+}
+
+.result-box {
+    text-align: center; padding: 32px 24px;
+    background: rgba(30, 41, 59, 0.9);
+    border-radius: 20px;
+    border: 2px solid #10B981;
+    animation: slideUp 0.5s;
+}
+.result-box .icon { font-size: 96px; margin-bottom: 16px; }
+.result-box h2 { font-size: 32px; margin-bottom: 8px; }
+.result-box .score {
+    font-size: 56px; font-weight: 900;
+    color: #10B981; margin: 16px 0;
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>CabiNet</h1>
+        <div class="student-name" id="studentName"></div>
+    </div>
+    <div id="content">
+        <div class="waiting">
+            <div class="icon">⏳</div>
+            <h2>Ждём начала теста...</h2>
+            <p style="color:#94a3b8;margin-top:12px">Учитель скоро запустит тест</p>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+const socket = io();
+let myName = localStorage.getItem('cabinet_name') || 'Ученик';
+document.getElementById('studentName').textContent = myName;
+
+let tasks = [];
+let answers = {};
+let currentIndex = 0;
+let finished = false;
+let tempMultiAnswer = [];
+
+socket.on('connect', () => {
+    socket.emit('register_student', { name: myName });
+});
+
+socket.on('register_ok', (data) => {
+    myName = data.name;
+    document.getElementById('studentName').textContent = myName;
+});
+
+socket.on('start_test', (data) => {
+    tasks = data.tasks;
+    answers = {};
+    currentIndex = 0;
+    finished = false;
+    tempMultiAnswer = [];
+    renderTest();
+});
+
+socket.on('answer_saved', (data) => {
+    if (data.already_saved) showToast('Уже сохранено');
+});
+
+socket.on('your_result', (data) => {
+    finished = true;
+    document.getElementById('content').innerHTML = `
+        <div class="result-box">
+            <div class="icon">🎓</div>
+            <h2>Тест завершён!</h2>
+            <div class="score">${data.correct} / ${data.total}</div>
+            <p style="color:#94a3b8;font-size:16px">
+                Правильных ответов: <b>${data.correct}</b> из <b>${data.total}</b>
+            </p>
+            <p style="color:#94a3b8;font-size:14px;margin-top:12px">
+                Баллов: <b style="color:#10B981">${data.points}</b>
+            </p>
+            <p style="color:#64748b;font-size:12px;margin-top:16px">
+                Открытые ответы проверит учитель
+            </p>
+        </div>
+    `;
+});
+
+socket.on('kicked', () => {
+    alert('Учитель удалил вас из урока.');
+    localStorage.removeItem('cabinet_name');
+    window.location.href = '/join';
+});
+
+// ================ РЕНДЕР ================
+
+const TYPE_LABELS = {
+    'single': 'Один ответ',
+    'multiple': 'Несколько ответов',
+    'open': 'Развёрнутый ответ',
+    'poll': 'Опрос'
+};
+const TYPE_HINTS = {
+    'single': '',
+    'multiple': '⚠️ Можно выбрать несколько вариантов. Отметьте все подходящие и нажмите «Сохранить выбор».',
+    'open': '✍️ Напишите свой ответ в поле ниже. Его проверит учитель.',
+    'poll': '📊 Это опрос — правильного ответа нет. Просто выберите вариант.'
+};
+const TYPE_CLASSES = {
+    'single': 'q-type-single',
+    'multiple': 'q-type-multiple',
+    'open': 'q-type-open',
+    'poll': 'q-type-poll'
+};
+
+function renderTest() {
+    if (tasks.length === 0) return;
+
+    const task = tasks[currentIndex];
+    const total = tasks.length;
+    const answered = Object.keys(answers).length;
+    const progress = (answered / total) * 100;
+    const qtype = task.qtype || 'single';
+
+    const typeLabel = TYPE_LABELS[qtype] || 'Вопрос';
+    const typeHint = TYPE_HINTS[qtype] || '';
+    const typeCls = TYPE_CLASSES[qtype] || 'q-type-single';
+
+    let bodyHtml = '';
+    const savedAnswer = answers[task.id];
+
+    if (qtype === 'single' || qtype === 'poll') {
+        const isSaved = savedAnswer !== undefined;
+        bodyHtml = task.options.map(opt => {
+            const isSelected = savedAnswer === opt;
+            return `
+                <div class="option ${isSelected ? 'selected' : ''} ${isSaved ? 'saved' : ''}"
+                     onclick="selectSingle('${escapeAttr(opt)}')">
+                    <div class="mark-circle"></div>
+                    <div>${escapeHtml(opt)}</div>
+                </div>
+            `;
+        }).join('');
+    } else if (qtype === 'multiple') {
+        const isSaved = savedAnswer !== undefined;
+        const currentSel = isSaved ? savedAnswer : tempMultiAnswer;
+        bodyHtml = task.options.map(opt => {
+            const isSelected = currentSel.includes(opt);
+            return `
+                <div class="option ${isSelected ? 'multi-selected' : ''}"
+                     onclick="toggleMulti('${escapeAttr(opt)}')">
+                    <div class="mark-check"></div>
+                    <div>${escapeHtml(opt)}</div>
+                </div>
+            `;
+        }).join('');
+
+        if (!isSaved) {
+            const cnt = tempMultiAnswer.length;
+            bodyHtml += `
+                <button class="btn-save" onclick="saveMulti()" ${cnt === 0 ? 'disabled' : ''}>
+                    ✓ Сохранить выбор (${cnt})
+                </button>
+            `;
+        } else {
+            bodyHtml += `<div style="text-align:center;color:#10B981;font-weight:700;margin-top:14px;padding:12px;background:rgba(16,185,129,0.1);border-radius:10px">✓ Выбор сохранён</div>`;
+        }
+    } else if (qtype === 'open') {
+        const isSaved = savedAnswer !== undefined;
+        if (isSaved) {
+            bodyHtml = `
+                <div class="saved-answer">${escapeHtml(savedAnswer)}</div>
+                <div style="text-align:center;color:#10B981;font-weight:700;margin-top:14px;padding:12px;background:rgba(16,185,129,0.1);border-radius:10px">✓ Ответ сохранён</div>
+            `;
+        } else {
+            bodyHtml = `
+                <textarea class="open-textarea" id="openAnswer" placeholder="Введите ваш ответ здесь..."></textarea>
+                <button class="btn-save" onclick="saveOpen()">✓ Сохранить ответ</button>
+            `;
+        }
+    }
+
+    let navHtml = '';
+    if (currentIndex > 0) {
+        navHtml += `<button class="btn btn-prev" onclick="prevQuestion()">← Назад</button>`;
+    }
+    if (currentIndex < total - 1) {
+        navHtml += `<button class="btn btn-next" onclick="nextQuestion()">Далее →</button>`;
+    } else {
+        const answeredCount = Object.keys(answers).length;
+        navHtml += `<button class="btn btn-finish" onclick="finishTest()">
+            🏁 Завершить (${answeredCount}/${total})
+        </button>`;
+    }
+
+    let dotsHtml = '<div class="dots">';
+    tasks.forEach((t, i) => {
+        const isAnswered = answers[t.id] !== undefined;
+        const isCurrent = i === currentIndex;
+        let cls = 'dot';
+        if (isCurrent) cls += ' active';
+        else if (isAnswered) cls += ' answered';
+        else if (i < currentIndex) cls += ' skipped';
+        dotsHtml += `<div class="${cls}" onclick="goTo(${i})">${i+1}</div>`;
+    });
+    dotsHtml += '</div>';
+
+    document.getElementById('content').innerHTML = `
+        <div class="progress-bar">
+            <div class="progress-fill" style="width:${progress}%"></div>
+        </div>
+        <div class="progress-text">
+            Вопрос ${currentIndex + 1} из ${total} • Отвечено: ${answered}
+        </div>
+
+        <div class="card">
+            <div class="q-top">
+                <div class="q-num">Вопрос ${currentIndex + 1}</div>
+                <div class="q-type ${typeCls}">${typeLabel}</div>
+            </div>
+            <div class="question">${escapeHtml(task.question)}</div>
+            ${typeHint ? `<div class="hint">${typeHint}</div>` : ''}
+            <div>${bodyHtml}</div>
+            <div class="nav-buttons">${navHtml}</div>
+            ${dotsHtml}
+        </div>
+    `;
+}
+
+function selectSingle(value) {
+    if (finished) return;
+    const task = tasks[currentIndex];
+    if (answers[task.id] !== undefined) return;
+    answers[task.id] = value;
+    socket.emit('submit_answer', { assignment_id: task.id, answer: value });
+    if (navigator.vibrate) navigator.vibrate(30);
+    setTimeout(() => {
+        if (currentIndex < tasks.length - 1) currentIndex++;
+        renderTest();
+    }, 300);
+}
+
+function toggleMulti(value) {
+    if (finished) return;
+    const task = tasks[currentIndex];
+    if (answers[task.id] !== undefined) return;
+
+    const idx = tempMultiAnswer.indexOf(value);
+    if (idx >= 0) tempMultiAnswer.splice(idx, 1);
+    else tempMultiAnswer.push(value);
+    renderTest();
+}
+
+function saveMulti() {
+    if (finished) return;
+    const task = tasks[currentIndex];
+    if (answers[task.id] !== undefined) return;
+    if (tempMultiAnswer.length === 0) return;
+
+    answers[task.id] = [...tempMultiAnswer];
+    socket.emit('submit_answer', {
+        assignment_id: task.id,
+        answer: tempMultiAnswer
+    });
+    if (navigator.vibrate) navigator.vibrate(30);
+    tempMultiAnswer = [];
+    renderTest();
+}
+
+function saveOpen() {
+    if (finished) return;
+    const task = tasks[currentIndex];
+    if (answers[task.id] !== undefined) return;
+    const textarea = document.getElementById('openAnswer');
+    const val = textarea.value.trim();
+    if (!val) {
+        alert('Введите ответ');
+        return;
+    }
+    answers[task.id] = val;
+    socket.emit('submit_answer', {
+        assignment_id: task.id,
+        answer: val
+    });
+    if (navigator.vibrate) navigator.vibrate(30);
+    renderTest();
+}
+
+function nextQuestion() {
+    tempMultiAnswer = [];
+    if (currentIndex < tasks.length - 1) {
+        currentIndex++;
+        renderTest();
+    }
+}
+
+function prevQuestion() {
+    tempMultiAnswer = [];
+    if (currentIndex > 0) {
+        currentIndex--;
+        renderTest();
+    }
+}
+
+function goTo(index) {
+    tempMultiAnswer = [];
+    currentIndex = index;
+    renderTest();
+}
+
+function finishTest() {
+    const answered = Object.keys(answers).length;
+    const total = tasks.length;
+    if (answered < total) {
+        if (!confirm(`Вы ответили на ${answered} из ${total} вопросов.\n\nВопросы без ответа будут засчитаны как 0.\n\nЗавершить тест?`)) return;
+    }
+    socket.emit('finish_test');
+}
+
+function escapeHtml(t) {
+    const d = document.createElement('div');
+    d.textContent = t;
+    return d.innerHTML;
+}
+
+function escapeAttr(t) {
+    return String(t).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+function showToast(msg) {
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = `
+        position:fixed; bottom:40px; left:50%; transform:translateX(-50%);
+        background:#10B981; color:white; padding:12px 24px;
+        border-radius:12px; font-weight:600; z-index:999;
+    `;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2000);
+}
+</script>
+</body>
+</html>

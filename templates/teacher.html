@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<!--
+  CabiNet — школьная платформа для тестов
+
+  Автор: Новиков Алексей Валерьевич
+  Год создания: 2026
+  Лицензия: All rights reserved
+
+  (c) 2026 Новиков Алексей Валерьевич. Все права защищены.
+  Любое копирование, распространение или изменение
+  без письменного разрешения автора запрещено.
+-->
+
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CabiNet — Учитель</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #f8fafc; min-height: 100vh; padding: 20px;
+}
+.container { max-width: 1200px; margin: 0 auto; }
+.header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 24px; flex-wrap: wrap; gap: 16px;
+}
+.header h1 {
+    font-size: 28px;
+    background: linear-gradient(90deg, #3B82F6, #10B981);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.nav a {
+    color: #94a3b8; text-decoration: none; padding: 8px 16px;
+    border-radius: 10px; margin-left: 8px; transition: all 0.2s;
+}
+.nav a:hover { background: rgba(59,130,246,0.2); color: #60a5fa; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+.card {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 20px; padding: 24px;
+}
+.card h2 {
+    font-size: 16px; margin-bottom: 16px; color: #3B82F6;
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 12px;
+}
+.qr-box {
+    background: white; padding: 20px; border-radius: 16px;
+    text-align: center; margin-bottom: 16px;
+}
+.qr-box img { max-width: 260px; width: 100%; display: block; margin: 0 auto; }
+.url-box {
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    padding: 12px; border-radius: 12px;
+    text-align: center; font-family: monospace;
+    font-size: 14px; color: #60a5fa; word-break: break-all;
+}
+.badge {
+    background: #3B82F6; color: white; padding: 4px 12px;
+    border-radius: 20px; font-size: 13px; font-weight: 700;
+}
+.btn-reset {
+    background: rgba(239,68,68,0.2); color: #f87171;
+    border: none; padding: 6px 12px; border-radius: 8px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-reset:hover { background: rgba(239,68,68,0.35); }
+.students-list { max-height: 400px; overflow-y: auto; }
+.student {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px; border-radius: 12px;
+    background: rgba(16, 185, 129, 0.1);
+    margin-bottom: 8px;
+    animation: slideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+.student .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, #10B981, #3B82F6);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: white; flex-shrink: 0;
+}
+.student .info { flex: 1; min-width: 0; }
+.student .name {
+    font-weight: 600; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+}
+.student .ip {
+    font-size: 11px; color: #94a3b8; font-family: monospace;
+}
+.icon-btn {
+    border: none; width: 32px; height: 32px;
+    border-radius: 8px; cursor: pointer; font-size: 14px;
+    transition: all 0.2s; flex-shrink: 0;
+}
+.icon-btn.rename { background: rgba(59,130,246,0.3); color: #60a5fa; }
+.icon-btn.rename:hover { background: rgba(59,130,246,0.5); }
+.icon-btn.kick { background: rgba(239,68,68,0.3); color: #f87171; }
+.icon-btn.kick:hover { background: rgba(239,68,68,0.5); }
+.empty { text-align: center; padding: 40px 20px; color: #64748b; }
+.status-dot {
+    display: inline-block; width: 8px; height: 8px;
+    border-radius: 50%; background: #10B981;
+    margin-right: 6px; animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>CabiNet</h1>
+        <div class="nav">
+            <a href="/">Главная</a>
+            <a href="/manage">Управление уроками →</a>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h2>📱 Вход для учеников</h2>
+            <div class="qr-box">
+                <img src="data:image/png;base64,{{ qr }}" alt="QR">
+            </div>
+            <div class="url-box">{{ url }}</div>
+            <p style="margin-top:12px;font-size:13px;color:#94a3b8;text-align:center">
+                IP учителя: <b>{{ ip }}</b>
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>
+                <span>👥 Ученики онлайн <span class="badge" id="count">0</span></span>
+                <button class="btn-reset" onclick="kickAll()">🗑 Сбросить всех</button>
+            </h2>
+            <div class="students-list" id="studentsList">
+                <div class="empty">Ждём подключения...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="/static/preloader.js"></script>
+<script>
+// Показываем прелоадер
+window.CabiNetPreloader.show({
+    slogan: 'УРОК НАЧИНАЕТСЯ ЗДЕСЬ',
+    duration: 5000
+});
+const socket = io();
+socket.on('connect', () => socket.emit('register_teacher'));
+socket.on('student_joined', () => refresh());
+socket.on('student_left', () => refresh());
+socket.on('student_renamed', () => refresh());
+socket.on('all_students_kicked', () => refresh());
+socket.on('student_left', () => refresh());
+socket.on('student_renamed', () => refresh());
+socket.on('all_students_kicked', () => refresh());
+
+function escapeHtml(t) {
+    const d = document.createElement('div');
+    d.textContent = t;
+    return d.innerHTML;
+}
+function escAttr(t) {
+    return (t || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+function refresh() {
+    fetch('/api/students').then(r => r.json()).then(data => {
+        document.getElementById('count').textContent = data.count;
+        const list = document.getElementById('studentsList');
+        if (data.students.length === 0) {
+            list.innerHTML = '<div class="empty">Ждём подключения...</div>';
+            return;
+        }
+        list.innerHTML = data.students.map(s => `
+            <div class="student">
+                <div class="avatar">${escapeHtml(s.name).slice(0,2).toUpperCase()}</div>
+                <div class="info">
+                    <div class="name">${escapeHtml(s.name)}</div>
+                    <div class="ip">${s.ip} • ${s.joined_at}</div>
+                </div>
+                <button class="icon-btn rename" 
+                        onclick="renameStudent('${s.sid}','${escAttr(s.name)}')"
+                        title="Переименовать">✏️</button>
+                <button class="icon-btn kick" 
+                        onclick="kickStudent('${s.sid}','${escAttr(s.name)}')"
+                        title="Удалить">✕</button>
+            </div>
+        `).join('');
+    });
+}
+
+async function kickStudent(sid, name) {
+    if (!confirm(`Удалить "${name}" из урока?\n\nОн сможет зайти заново с новым именем.\nЕго ответы сохранятся в базе.`)) return;
+    await fetch(`/api/students/${sid}/kick`, { method: 'POST' });
+    refresh();
+}
+
+async function renameStudent(sid, oldName) {
+    const newName = prompt(`Переименовать "${oldName}" в:`, oldName);
+    if (!newName || newName === oldName) return;
+    await fetch(`/api/students/${sid}/rename`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ name: newName })
+    });
+    refresh();
+}
+
+async function kickAll() {
+    if (!confirm('Удалить ВСЕХ учеников?\n\nОни смогут зайти заново.\nРезультаты в базе сохранятся.')) return;
+    const res = await fetch('/api/students/kick_all', { method: 'POST' });
+    const data = await res.json();
+    alert(`Удалено учеников: ${data.count}`);
+    refresh();
+}
+
+setInterval(refresh, 3000);
+refresh();
+</script>
+</body>
+</html>

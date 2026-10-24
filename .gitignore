@@ -1,0 +1,33 @@
+# Данные — НЕ пушим
+*.db
+*.sqlite
+*.sqlite3
+cabinet.db
+
+# Исполняемые файлы — НЕ пушим
+*.exe
+*.msi
+*.bat
+*.vbs
+
+# Временные
+__pycache__/
+*.pyc
+*.pyo
+build/
+dist/
+*.spec
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# ОС
+.DS_Store
+Thumbs.db
+
+# Личное
+*.log
+config_local.py
+secret.py

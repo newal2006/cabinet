@@ -1,0 +1,577 @@
+<!--
+  CabiNet — школьная платформа для тестов
+
+  Автор: Новиков Алексей Валерьевич
+  Год создания: 2026
+  Лицензия: All rights reserved
+
+  (c) 2026 Новиков Алексей Валерьевич. Все права защищены.
+  Любое копирование, распространение или изменение
+  без письменного разрешения автора запрещено.
+-->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CabiNet — Управление</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #f8fafc; min-height: 100vh; padding: 20px;
+}
+.container { max-width: 1300px; margin: 0 auto; }
+.header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 24px; flex-wrap: wrap; gap: 16px;
+}
+.header h1 {
+    font-size: 28px;
+    background: linear-gradient(90deg, #3B82F6, #10B981);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.nav a {
+    color: #94a3b8; text-decoration: none; padding: 8px 16px;
+    border-radius: 10px; margin-left: 8px; transition: all 0.2s;
+}
+.nav a:hover { background: rgba(59,130,246,0.2); color: #60a5fa; }
+.layout { display: grid; grid-template-columns: 340px 1fr; gap: 20px; }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+.card {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 20px; padding: 20px;
+}
+.card h2 { font-size: 16px; margin-bottom: 16px; color: #3B82F6; }
+.btn {
+    padding: 10px 16px; border: none; border-radius: 10px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    font-family: inherit; transition: all 0.2s;
+}
+.btn-primary { background: linear-gradient(135deg, #3B82F6, #10B981); color: white; }
+.btn-primary:hover { transform: translateY(-2px); }
+.btn-orange { background: linear-gradient(135deg, #F59E0B, #EF4444); color: white; }
+.btn-orange:hover { transform: translateY(-2px); }
+.btn-secondary { background: rgba(148, 163, 184, 0.2); color: #f8fafc; }
+.btn-secondary:hover { background: rgba(148, 163, 184, 0.3); }
+.btn-danger { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+.btn-danger:hover { background: rgba(239, 68, 68, 0.3); }
+.btn:active { transform: scale(0.97); }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+input, textarea, select {
+    width: 100%; padding: 12px;
+    background: rgba(15, 23, 42, 0.8);
+    border: 2px solid rgba(148, 163, 184, 0.2);
+    border-radius: 10px; color: #f8fafc;
+    font-size: 14px; font-family: inherit; outline: none;
+}
+input:focus, textarea:focus { border-color: #3B82F6; }
+textarea { resize: vertical; }
+.field { margin-bottom: 12px; }
+.field label {
+    display: block; font-size: 12px; color: #94a3b8;
+    margin-bottom: 6px; font-weight: 600;
+}
+.lesson-item {
+    padding: 14px; border-radius: 12px;
+    background: rgba(15, 23, 42, 0.5);
+    margin-bottom: 8px; cursor: pointer;
+    transition: all 0.2s; display: flex;
+    justify-content: space-between; align-items: center; gap: 8px;
+}
+.lesson-item:hover { background: rgba(59, 130, 246, 0.15); }
+.lesson-item.active {
+    background: rgba(59, 130, 246, 0.3);
+    border: 2px solid #3B82F6;
+}
+.lesson-item .info { flex: 1; min-width: 0; }
+.lesson-item .title { font-weight: 600; margin-bottom: 4px; }
+.lesson-item .meta { font-size: 11px; color: #94a3b8; }
+.assignment-item {
+    padding: 16px; border-radius: 12px;
+    background: rgba(15, 23, 42, 0.5);
+    margin-bottom: 10px;
+    border-left: 4px solid #3B82F6;
+}
+.assignment-item.type-single { border-left-color: #3B82F6; }
+.assignment-item.type-multiple { border-left-color: #10B981; }
+.assignment-item.type-open { border-left-color: #cba6f7; }
+.assignment-item.type-poll { border-left-color: #F59E0B; }
+.assignment-item .q { font-weight: 600; margin-bottom: 8px; font-size: 15px; }
+.qtype-badge {
+    display: inline-block; padding: 3px 10px;
+    border-radius: 20px; font-size: 11px; font-weight: 700;
+    margin-right: 8px; text-transform: uppercase;
+}
+.type-badge-single { background: rgba(59,130,246,0.2); color: #60a5fa; }
+.type-badge-multiple { background: rgba(16,185,129,0.2); color: #10B981; }
+.type-badge-open { background: rgba(203,166,247,0.2); color: #cba6f7; }
+.type-badge-poll { background: rgba(245,158,11,0.2); color: #F59E0B; }
+.assignment-item .meta {
+    display: flex; gap: 16px; font-size: 12px;
+    color: #94a3b8; flex-wrap: wrap; margin-bottom: 12px;
+}
+.assignment-item .meta b { color: #f8fafc; }
+.assignment-item .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.modal {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(10px);
+    display: none; align-items: center; justify-content: center;
+    padding: 20px; z-index: 100;
+}
+.modal.open { display: flex; }
+.modal-content {
+    background: #1e293b; border-radius: 20px; padding: 28px;
+    max-width: 700px; width: 100%; max-height: 90vh;
+    overflow-y: auto; border: 1px solid rgba(148,163,184,0.2);
+}
+.modal-content h2 { color: #3B82F6; margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+.modal-actions .btn { flex: 1; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width:600px) { .grid-2 { grid-template-columns: 1fr; } }
+.empty { text-align: center; padding: 40px 20px; color: #64748b; }
+.status-badge {
+    display: inline-block; padding: 3px 10px;
+    border-radius: 20px; font-size: 11px; font-weight: 700;
+}
+.status-draft { background: rgba(245,158,11,0.2); color: #F59E0B; }
+.status-active { background: rgba(16,185,129,0.2); color: #10B981; animation: pulse 2s infinite; }
+.status-finished { background: rgba(59,130,246,0.2); color: #60a5fa; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+.lesson-header {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 12px; flex-wrap: wrap; margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(148,163,184,0.15);
+}
+.lesson-header .title-block h2 { color: #3B82F6; font-size: 22px; margin-bottom: 6px; }
+.lesson-header .title-block .meta { color: #94a3b8; font-size: 13px; }
+.lesson-header .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.toolbar {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 16px; padding: 12px;
+    background: rgba(15,23,42,0.4); border-radius: 12px;
+}
+.format-hint {
+    background: rgba(15,23,42,0.6);
+    padding: 14px; border-radius: 12px;
+    margin-bottom: 16px; font-size: 13px; line-height: 1.9;
+}
+.format-hint code {
+    background: rgba(59,130,246,0.15);
+    padding: 2px 6px; border-radius: 4px;
+    color: #a5b4fc; font-family: monospace;
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>CabiNet — Управление</h1>
+        <div class="nav"><a href="/">← Главная</a></div>
+    </div>
+
+    <div class="layout">
+        <div class="card">
+            <h2>📚 Уроки</h2>
+            <button class="btn btn-primary" style="width:100%;margin-bottom:12px"
+                    onclick="openNewLesson()">+ Новый урок</button>
+            <div id="lessonsList"><div class="empty">Пока нет уроков</div></div>
+        </div>
+
+        <div class="card">
+            <div id="panel">
+                <div class="empty"><h2>Выберите урок слева</h2></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛКА: Новый урок -->
+<div class="modal" id="lessonModal">
+    <div class="modal-content">
+        <h2>Новый урок</h2>
+        <div class="field">
+            <label>Тема урока</label>
+            <input type="text" id="lessonTitle" placeholder="Например: §1.4 Представление информации" maxlength="100">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="closeModal('lessonModal')">Отмена</button>
+            <button class="btn btn-primary" onclick="saveLesson()">Создать</button>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛКА: Импорт -->
+<div class="modal" id="importModal">
+    <div class="modal-content">
+        <h2>📁 Импорт заданий</h2>
+        <div class="format-hint">
+            <b style="color:#3B82F6">Формат:</b><br>
+            <code># Вопрос 1</code> — начало нового вопроса<br>
+            <code>Что такое цикл?</code> — текст вопроса<br>
+            <br>
+            <b style="color:#60a5fa">Типы вопросов:</b><br>
+            <code>* ответ</code> — <b style="color:#60a5fa">один</b> правильный ответ<br>
+            <code>- ответ</code> — неправильный вариант<br>
+            <code>+ ответ</code> — <b style="color:#10B981">несколько</b> правильных (все <code>+</code>)<br>
+            <code>?</code> — <b style="color:#cba6f7">открытый</b> ответ (ученик пишет сам)<br>
+            <code>~ ответ</code> — вариант для <b style="color:#F59E0B">опроса</b> (нет правильного)<br>
+            <br>
+            <code>! текст</code> — пояснение (покажется на проекторе)
+        </div>
+        <div class="field">
+            <label>Загрузить .txt файл</label>
+            <input type="file" id="importFile" accept=".txt" onchange="loadFile(event)" style="padding:8px">
+        </div>
+        <div class="field">
+            <label>Или вставьте текст:</label>
+            <textarea id="importText" rows="14" style="font-family:monospace;font-size:13px"
+placeholder="# Что такое цикл?
+Что такое цикл?
+* Повторение действий
+- Ветвление
+- Функция
+! Цикл — повторяющаяся последовательность
+
+# Какие циклы есть в Python?
+Какие циклы существуют в Python?
++ for
++ while
+- if
+- else
+! В Python два цикла: for и while
+
+# Что такое массив?
+Объясните своими словами, что такое массив?
+?
+! Массив — набор элементов одного типа
+
+# Как вам урок?
+Как вам сегодняшний урок?
+~ Отлично
+~ Хорошо
+~ Нормально"></textarea>
+        </div>
+        <div class="field">
+            <label>Баллы за задание</label>
+            <input type="number" id="importPoints" value="1" min="1" max="10">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="closeModal('importModal')">Отмена</button>
+            <button class="btn btn-primary" onclick="doImport()">📥 Импортировать</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const socket = io();
+socket.on('connect', () => socket.emit('register_teacher'));
+
+let lessonsData = [];
+let currentLessonId = null;
+let currentLesson = null;
+
+async function api(url, method='GET', data=null) {
+    const opts = { method, headers: {'Content-Type':'application/json'} };
+    if (data) opts.body = JSON.stringify(data);
+    const r = await fetch(url, opts);
+    return r.json();
+}
+function escapeHtml(t) {
+    const d = document.createElement('div');
+    d.textContent = t;
+    return d.innerHTML;
+}
+
+const TYPE_LABELS = {
+    'single': { label: 'Один ответ', badge: 'type-badge-single' },
+    'multiple': { label: 'Несколько', badge: 'type-badge-multiple' },
+    'open': { label: 'Развёрнутый', badge: 'type-badge-open' },
+    'poll': { label: 'Опрос', badge: 'type-badge-poll' }
+};
+
+async function loadLessons() {
+    lessonsData = await api('/api/lessons');
+    const list = document.getElementById('lessonsList');
+    if (lessonsData.length === 0) {
+        list.innerHTML = '<div class="empty">Пока нет уроков</div>';
+        return;
+    }
+    list.innerHTML = lessonsData.map(l => {
+        const t = l.status === 'active' ? 'ИДЁТ ТЕСТ' :
+                  l.status === 'finished' ? 'ЗАВЕРШЁН' : 'ЧЕРНОВИК';
+        return `
+        <div class="lesson-item ${l.id === currentLessonId ? 'active' : ''}"
+             onclick="openLesson(${l.id})">
+            <div class="info">
+                <div class="title">${escapeHtml(l.title)}</div>
+                <div class="meta">
+                    <span class="status-badge status-${l.status}">${t}</span>
+                    • ${l.access_code}
+                </div>
+            </div>
+            <button class="btn btn-danger btn-sm" 
+                    onclick="event.stopPropagation();delLesson(${l.id})">×</button>
+        </div>
+        `;
+    }).join('');
+}
+
+function openNewLesson() {
+    document.getElementById('lessonTitle').value = '';
+    document.getElementById('lessonModal').classList.add('open');
+    setTimeout(() => document.getElementById('lessonTitle').focus(), 100);
+}
+
+async function saveLesson() {
+    const title = document.getElementById('lessonTitle').value.trim();
+    if (!title) return alert('Введите тему');
+    const res = await api('/api/lessons', 'POST', { title });
+    if (res.error) return alert(res.error);
+    closeModal('lessonModal');
+    await loadLessons();
+    await openLesson(res.id);
+}
+
+async function delLesson(id) {
+    if (!confirm('Удалить урок и все его задания?')) return;
+    await api('/api/lessons/' + id, 'DELETE');
+    if (currentLessonId === id) {
+        currentLessonId = null;
+        document.getElementById('panel').innerHTML = '<div class="empty">Выберите урок слева</div>';
+    }
+    await loadLessons();
+}
+
+async function openLesson(id) {
+    currentLessonId = id;
+    await loadLessons();
+    await renderPanel();
+}
+
+async function renderPanel() {
+    if (!currentLessonId) return;
+    currentLesson = await api('/api/lessons/' + currentLessonId);
+    if (currentLesson.error) {
+        document.getElementById('panel').innerHTML = '<div class="empty">Урок не найден</div>';
+        return;
+    }
+    const assignments = currentLesson.assignments || [];
+    const results = currentLesson.results || [];
+    const status = currentLesson.status;
+    const statusText = status === 'active' ? 'ИДЁТ ТЕСТ' :
+                       status === 'finished' ? 'ЗАВЕРШЁН' : 'ЧЕРНОВИК';
+
+    let statusButtons = '';
+    if (status === 'draft') {
+        statusButtons = `<button class="btn btn-primary" onclick="startTest()">▶ Запустить тест (${assignments.length})</button>`;
+    } else if (status === 'active') {
+        statusButtons = `<button class="btn btn-orange" onclick="finishTest()">⏹ Завершить тест</button>`;
+    } else {
+        statusButtons = `
+            <button class="btn btn-primary" onclick="restartTest()">🔄 Перезапустить</button>
+            <button class="btn btn-danger" onclick="resetTest()">🗑 Сбросить ответы</button>
+        `;
+    }
+
+    document.getElementById('panel').innerHTML = `
+        <div class="lesson-header">
+            <div class="title-block">
+                <h2>${escapeHtml(currentLesson.title)}</h2>
+                <div class="meta">
+                    Код: <b style="color:#60a5fa">${currentLesson.access_code}</b>
+                    • <span class="status-badge status-${status}">${statusText}</span>
+                    • Вопросов: <b>${assignments.length}</b>
+                </div>
+            </div>
+            <div class="actions">
+                ${statusButtons}
+            </div>
+        </div>
+
+        <div class="toolbar">
+            <button class="btn btn-secondary" onclick="openImportModal()">📁 Импорт из файла</button>
+        </div>
+
+        <h3 style="color:#94a3b8;font-size:13px;margin:20px 0 10px">
+            ВОПРОСЫ (${assignments.length})
+        </h3>
+        <div id="assignmentsList">
+            ${assignments.length === 0
+                ? '<div class="empty">Нет вопросов. Импортируйте из файла.</div>'
+                : assignments.map(a => {
+                    const t = TYPE_LABELS[a.qtype || 'single'];
+                    let correctDisplay = a.correct_answer;
+                    if (a.qtype === 'multiple') {
+                        try { correctDisplay = JSON.parse(a.correct_answer).join(' + '); }
+                        catch(e) {}
+                    } else if (a.qtype === 'open') {
+                        correctDisplay = '(развёрнутый ответ — проверяет учитель)';
+                    } else if (a.qtype === 'poll') {
+                        correctDisplay = '(опрос — нет правильного)';
+                    }
+                    return `
+                        <div class="assignment-item type-${a.qtype || 'single'}">
+                            <div class="q">
+                                <span class="qtype-badge ${t.badge}">${t.label}</span>
+                                ${a.order_num}. ${escapeHtml(a.question)}
+                            </div>
+                            <div class="meta">
+                                ${a.qtype !== 'open' && a.qtype !== 'poll' 
+                                    ? `<span>✓ <b style="color:#10B981">${escapeHtml(correctDisplay)}</b></span>`
+                                    : `<span>${escapeHtml(correctDisplay)}</span>`}
+                                <span>Баллов: <b>${a.points}</b></span>
+                                ${a.explanation ? `<span>💡 ${escapeHtml(a.explanation)}</span>` : ''}
+                            </div>
+                            <div class="actions">
+                                <button class="btn btn-danger btn-sm" onclick="delAssignment(${a.id})">× Удалить</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('')
+            }
+        </div>
+
+        <h3 style="color:#94a3b8;font-size:13px;margin:24px 0 10px">
+            РЕЗУЛЬТАТЫ (${results.length})
+        </h3>
+        <div id="resultsBox">${renderResults(results)}</div>
+    `;
+}
+
+function renderResults(results) {
+    if (results.length === 0) return '<div class="empty">Пока нет ответов</div>';
+    return `
+        <table style="width:100%;border-collapse:collapse;font-size:14px">
+            <thead>
+                <tr style="color:#94a3b8;font-size:12px;text-align:left">
+                    <th style="padding:10px 8px">#</th>
+                    <th style="padding:10px 8px">Ученик</th>
+                    <th style="padding:10px 8px">IP</th>
+                    <th style="padding:10px 8px">Правильных</th>
+                    <th style="padding:10px 8px">Баллов</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${results.map((r, i) => `
+                    <tr style="border-top:1px solid rgba(148,163,184,0.1)">
+                        <td style="padding:10px 8px;color:#94a3b8">${i+1}</td>
+                        <td style="padding:10px 8px;font-weight:600">${escapeHtml(r.student_name)}</td>
+                        <td style="padding:10px 8px;font-family:monospace;font-size:12px;color:#94a3b8">
+                            ${r.student_ip || '—'}
+                        </td>
+                        <td style="padding:10px 8px">${r.correct_count} из ${r.answered_count}</td>
+                        <td style="padding:10px 8px;font-weight:700;color:#10B981;font-size:16px">
+                            ${r.total_points}
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+async function startTest() {
+    if (!confirm('Запустить тест? Все ученики получат вопросы в случайном порядке.')) return;
+    const res = await api(`/api/lessons/${currentLessonId}/start`, 'POST');
+    if (res.error) return alert(res.error);
+    await renderPanel();
+    await loadLessons();
+    alert(`✓ Тест запущен! ${res.total} вопросов.`);
+}
+
+async function finishTest() {
+    if (!confirm('Завершить тест?')) return;
+    await api(`/api/lessons/${currentLessonId}/finish`, 'POST');
+    await renderPanel();
+    await loadLessons();
+}
+
+async function restartTest() {
+    if (!confirm('Перезапустить тест? Ответы удалятся.')) return;
+    await api(`/api/lessons/${currentLessonId}/reset`, 'POST');
+    await api(`/api/lessons/${currentLessonId}/start`, 'POST');
+    await renderPanel();
+    await loadLessons();
+}
+
+async function resetTest() {
+    if (!confirm('⚠️ Удалить ВСЕ ответы?')) return;
+    await api(`/api/lessons/${currentLessonId}/reset`, 'POST');
+    await renderPanel();
+    await loadLessons();
+}
+
+async function delAssignment(id) {
+    if (!confirm('Удалить задание?')) return;
+    await api('/api/assignments/' + id, 'DELETE');
+    await renderPanel();
+}
+
+function openImportModal() {
+    document.getElementById('importText').value = '';
+    document.getElementById('importFile').value = '';
+    document.getElementById('importPoints').value = '1';
+    document.getElementById('importModal').classList.add('open');
+}
+
+function loadFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById('importText').value = e.target.result;
+    };
+    reader.readAsText(file, 'UTF-8');
+}
+
+async function doImport() {
+    const text = document.getElementById('importText').value;
+    const points = parseInt(document.getElementById('importPoints').value);
+    if (!text.trim()) return alert('Вставьте текст');
+    const res = await api(`/api/lessons/${currentLessonId}/import`, 'POST', {
+        text, points
+    });
+    if (res.error) return alert('Ошибка: ' + res.error);
+    closeModal('importModal');
+    await renderPanel();
+    let msg = `📥 Импортировано: ${res.added} из ${res.total}`;
+    if (res.errors && res.errors.length > 0) msg += '\n\nОшибки:\n' + res.errors.join('\n');
+    alert(msg);
+}
+
+socket.on('new_answer', () => {
+    if (currentLessonId) {
+        api(`/api/lessons/${currentLessonId}/results`).then(results => {
+            const box = document.getElementById('resultsBox');
+            if (box) box.innerHTML = renderResults(results);
+        });
+    }
+});
+
+socket.on('test_started', () => {
+    loadLessons();
+    renderPanel();
+});
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+}
+
+document.querySelectorAll('.modal').forEach(m => {
+    m.addEventListener('click', (e) => {
+        if (e.target === m) m.classList.remove('open');
+    });
+});
+
+loadLessons();
+</script>
+</body>
+</html>
